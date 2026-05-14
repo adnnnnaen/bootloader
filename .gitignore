@@ -1,0 +1,16 @@
+# Ignore folders
+.claude/
+cours/
+plan-project/
+
+# STM32 / embedded build artifacts inside BootApp
+BootApp/Debug/
+BootApp/Release/
+BootApp/*.elf
+BootApp/*.list
+BootApp/*.map
+BootApp/*.bin
+BootApp/*.hex
+BootApp/*.o
+BootApp/*.d
+BootApp/.metadata/
