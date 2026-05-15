@@ -14,3 +14,4 @@ BootApp/*.hex
 BootApp/*.o
 BootApp/*.d
 BootApp/.metadata/
+.vscode/
