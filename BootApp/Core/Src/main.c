@@ -43,8 +43,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-
-/* Definitions for Button */
+uint8_t rx_byte;
+char rx_buffer[64];
+uint8_t rx_index = 0;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -105,8 +106,8 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
-  /* USER CODE BEGIN RTOS_SEMAPHORES *
-
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -118,7 +119,7 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-
+  /* creation of Button */
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -126,7 +127,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   uart_log_init(); 
-  MX_FREERTOS_Init();     /* crée le mutex de log avant le démarrage du scheduler */
+  MX_FREERTOS_Init();  
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);   // ← ICI
+   /* crée le mutex de log avant le démarrage du scheduler */
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -247,7 +250,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -271,19 +274,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartBlinkTask */
-/**
-  * @brief  Function implementing the blink thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-  if (GPIO_Pin == GPIO_PIN_13){
-    osSemaphoreRelease((ButtonSem));
-  }
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
@@ -305,6 +295,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == GPIO_PIN_13) {
+        osSemaphoreRelease(ButtonSem);
+    }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2) {
+        
+        // CAS 1 : Entrée tapée → fin de commande
+        if (rx_byte == '\n' || rx_byte == '\r') {
+            rx_buffer[rx_index] = '\0';
+            osMessageQueuePut(UartQueue, rx_buffer, 0, 0);
+            rx_index = 0;
+        }
+        // CAS 2 : lettre normale → accumuler
+        else if (rx_index < sizeof(rx_buffer) - 1) {
+            rx_buffer[rx_index++] = rx_byte;
+        }
+        
+        // Toujours : réarmer pour le prochain octet
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+    }
 }
 
 /**

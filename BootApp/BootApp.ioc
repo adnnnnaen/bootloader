@@ -62,6 +62,7 @@ NVIC.SysTick_IRQn=true\:15\:0\:true\:false\:false\:true\:true\:true\:false
 NVIC.TIM5_IRQn=true\:15\:0\:false\:false\:true\:false\:false\:true\:true
 NVIC.TimeBase=TIM5_IRQn
 NVIC.TimeBaseIP=TIM5
+NVIC.USART2_IRQn=true\:5\:0\:false\:false\:true\:true\:true\:true\:true
 NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:true\:false\:true\:false\:false
 PA13.GPIOParameters=GPIO_Label
 PA13.GPIO_Label=TMS
