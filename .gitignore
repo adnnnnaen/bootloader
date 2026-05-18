@@ -14,4 +14,20 @@ BootApp/*.hex
 BootApp/*.o
 BootApp/*.d
 BootApp/.metadata/
+
+# STM32 / embedded build artifacts inside FlashTest (Chap 7)
+FlashTest/Debug/
+FlashTest/Release/
+FlashTest/*.elf
+FlashTest/*.list
+FlashTest/*.map
+FlashTest/*.bin
+FlashTest/*.hex
+FlashTest/*.o
+FlashTest/*.d
+FlashTest/.metadata/
+
+# STM32CubeIDE volatile per-session UI state (regenerated on each SFR view open)
+**/.settings/com.st.stm32cube.ide.mcu.sfrview.prefs
+
 .vscode/
