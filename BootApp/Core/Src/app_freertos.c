@@ -42,9 +42,9 @@ void MX_FREERTOS_Init(void)
     UartQueue = osMessageQueueNew(10, 64, NULL);
     
     /* Tâches */
-    //BlinkHandle  = osThreadNew(StartBlinkTask,  NULL, &Blink_attributes);
-    //uttonHandle = osThreadNew(StartButtonTask, NULL, &Button_attributes);
-    UartButtonHandle = osThreadNew(StartUartBlinkTask, NULL, &UartBlink_attributes);
+    BlinkHandle  = osThreadNew(StartBlinkTask,  NULL, &Blink_attributes);
+    ButtonHandle = osThreadNew(StartButtonTask, NULL, &Button_attributes);
+   
 }
 
 /* ===== Implémentations des tâches ===== */
