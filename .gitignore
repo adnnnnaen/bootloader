@@ -27,6 +27,18 @@ FlashTest/*.o
 FlashTest/*.d
 FlashTest/.metadata/
 
+# STM32 / embedded build artifacts inside bootloader (Chap 8)
+bootloader/Debug/
+bootloader/Release/
+bootloader/*.elf
+bootloader/*.list
+bootloader/*.map
+bootloader/*.bin
+bootloader/*.hex
+bootloader/*.o
+bootloader/*.d
+bootloader/.metadata/
+
 # STM32CubeIDE volatile per-session UI state (regenerated on each SFR view open)
 **/.settings/com.st.stm32cube.ide.mcu.sfrview.prefs
 
