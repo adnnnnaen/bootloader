@@ -18,7 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "uart_log.h"
+#include "boot.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -90,6 +91,14 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+ for (int i = 0; i < 4; i++){
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+  HAL_Delay(500);
+ }
+   
+ HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); 
+
+ jump_to_app(APP_SLOT_A_ADDR);
 
   /* USER CODE END 2 */
 
