@@ -14,3 +14,9 @@ uint32_t crc32_calc(const uint8_t *data, uint32_t len)
     }
     return ~crc;
 }
+
+
+uint32_t crc32_of_flash(uint32_t addr, uint32_t size)
+{
+    return crc32_calc((const uint8_t *)addr, size);
+}
