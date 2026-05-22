@@ -20,6 +20,9 @@
 #include "main.h"
 #include "uart_log.h"
 #include "boot.h"
+#include "crc.h"
+#include "flash_io.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -95,8 +98,36 @@ int main(void)
   HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
   HAL_Delay(500);
  }
-   
- HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); 
+
+for (int i = 0; i < 4; i++){
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    HAL_Delay(500);
+}
+
+const uint8_t test[16] = "ADNANEISTHEBESTA";
+uint32_t addresse_sec7 = 0x08060000;
+
+// CRC du contenu
+uint32_t crc = crc32_calc(test, sizeof(test) - 1);
+LOG_BOOT("CRC(\"ADNANEISTHEBEST\") = 0x%08lX", (unsigned long)crc);
+
+// Effacement secteur 7
+HAL_StatusTypeDef st1 = flash_erase(FLASH_SECTOR_7);
+LOG_BOOT("Erase status: %d", st1);
+
+// Écriture en flash
+HAL_StatusTypeDef st = flash_write(addresse_sec7, (uint8_t*)test, 16);
+LOG_BOOT("Write status: %d", st);
+
+// Relecture pour vérifier
+const uint8_t *p = (const uint8_t *)addresse_sec7;
+for(int i = 0; i < 16; i++){
+    LOG_BOOT("Data at address %p is '%c' (0x%02X)", (void *)(p + i), p[i], p[i]);
+}
+
+HAL_Delay(500);
+
+HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); 
 
  jump_to_app(APP_SLOT_A_ADDR);
 
