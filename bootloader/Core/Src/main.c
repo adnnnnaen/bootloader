@@ -22,6 +22,7 @@
 #include "boot.h"
 #include "crc.h"
 #include "flash_io.h"
+#include "metadata.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -127,7 +128,42 @@ for(int i = 0; i < 16; i++){
 
 HAL_Delay(500);
 
+#ifdef BOOTSTRAP_METADATA
+{
+    LOG_BOOT(">>> BOOTSTRAP_METADATA mode <<<");
+    bootloader_meta_t m = {
+        .magic           = META_MAGIC,
+        .version_meta    = META_VERSION,
+        .active_slot     = SLOT_A,
+        .boot_count      = 0,
+        .slot_a_version  = 0x00010000U,   /* 1.0.0 */
+        .slot_a_size     = 0,              /* à mettre à jour plus tard */
+        .slot_a_crc      = 0,              /* à mettre à jour plus tard */
+        .slot_a_validated = 1,             /* on déclare A valide */
+        .slot_b_version  = 0,
+        .slot_b_size     = 0,
+        .slot_b_crc      = 0,
+        .slot_b_validated = 0,
+    };
+    HAL_StatusTypeDef st = meta_write(&m);
+    LOG_BOOT("meta_write returned %d, halting (re-compile WITHOUT -DBOOTSTRAP_METADATA)", st);
+    while (1) { HAL_Delay(1000); }
+}
+#endif
+
 HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); 
+
+bootloader_meta_t mt;
+meta_read(&mt);
+
+bool validate = meta_validate(&mt);
+
+if (validate){
+  LOG_INFO("Metadata valide");
+}
+else{
+  LOG_INFO("MetaData non valide");
+}
 
  jump_to_app(APP_SLOT_A_ADDR);
 
