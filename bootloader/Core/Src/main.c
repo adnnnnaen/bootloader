@@ -95,77 +95,71 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
- for (int i = 0; i < 4; i++){
-  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-  HAL_Delay(500);
- }
-
-for (int i = 0; i < 4; i++){
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    HAL_Delay(500);
-}
-
-const uint8_t test[16] = "ADNANEISTHEBESTA";
-uint32_t addresse_sec7 = 0x08060000;
-
-// CRC du contenu
-uint32_t crc = crc32_calc(test, sizeof(test) - 1);
-LOG_BOOT("CRC(\"ADNANEISTHEBEST\") = 0x%08lX", (unsigned long)crc);
-
-// Effacement secteur 7
-HAL_StatusTypeDef st1 = flash_erase(FLASH_SECTOR_7);
-LOG_BOOT("Erase status: %d", st1);
-
-// Écriture en flash
-HAL_StatusTypeDef st = flash_write(addresse_sec7, (uint8_t*)test, 16);
-LOG_BOOT("Write status: %d", st);
-
-// Relecture pour vérifier
-const uint8_t *p = (const uint8_t *)addresse_sec7;
-for(int i = 0; i < 16; i++){
-    LOG_BOOT("Data at address %p is '%c' (0x%02X)", (void *)(p + i), p[i], p[i]);
-}
-
-HAL_Delay(500);
 
 #ifdef BOOTSTRAP_METADATA
 {
     LOG_BOOT(">>> BOOTSTRAP_METADATA mode <<<");
+
+    /* Calcule le CRC réel du contenu actuel du slot A */
+    const uint32_t app_size = 44932;   
+    uint32_t app_crc = crc32_of_flash(SLOT_A_ADDR, app_size);
+    LOG_BOOT("computed slot A CRC = 0x%08lX (size=%lu)",
+             (unsigned long)app_crc, (unsigned long)app_size);
+
     bootloader_meta_t m = {
-        .magic           = META_MAGIC,
-        .version_meta    = META_VERSION,
-        .active_slot     = SLOT_A,
-        .boot_count      = 0,
-        .slot_a_version  = 0x00010000U,   /* 1.0.0 */
-        .slot_a_size     = 0,              /* à mettre à jour plus tard */
-        .slot_a_crc      = 0,              /* à mettre à jour plus tard */
-        .slot_a_validated = 1,             /* on déclare A valide */
-        .slot_b_version  = 0,
-        .slot_b_size     = 0,
-        .slot_b_crc      = 0,
+        .magic        = META_MAGIC,
+        .version_meta = META_VERSION,
+        .active_slot  = SLOT_A,
+        .boot_count   = 0,
+        .slot_a_version   = 0x00010000U,   /* 1.0.0 */
+        .slot_a_size      = app_size,
+        .slot_a_crc       = app_crc,
+        .slot_a_validated = 1,
+        .slot_b_version   = 0,
+        .slot_b_size      = 0,
+        .slot_b_crc       = 0,
         .slot_b_validated = 0,
     };
     HAL_StatusTypeDef st = meta_write(&m);
-    LOG_BOOT("meta_write returned %d, halting (re-compile WITHOUT -DBOOTSTRAP_METADATA)", st);
+    LOG_BOOT("meta_write returned %d, halting", st);
     while (1) { HAL_Delay(1000); }
 }
 #endif
 
 HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET); 
 
-bootloader_meta_t mt;
-meta_read(&mt);
+bootloader_meta_t meta;
+meta_read(&meta);
 
-bool validate = meta_validate(&mt);
+uint32_t slot_addr = (meta.active_slot == SLOT_A) ? SLOT_A_ADDR  : SLOT_B_ADDR;
+uint32_t slot_size = (meta.active_slot == SLOT_A) ? meta.slot_a_size : meta.slot_b_size;
+uint32_t slot_crc  = (meta.active_slot == SLOT_A) ? meta.slot_a_crc  : meta.slot_b_crc;
 
-if (validate){
-  LOG_INFO("Metadata valide");
+if (slot_size == 0) {
+    LOG_BOOT("slot %c vide, halt", meta.active_slot == SLOT_A ? 'A' : 'B');
+    while (1) { HAL_Delay(1000); }
 }
-else{
-  LOG_INFO("MetaData non valide");
-}
 
- jump_to_app(APP_SLOT_A_ADDR);
+uint32_t computed = crc32_of_flash(slot_addr, slot_size);
+if (computed != slot_crc) {
+    LOG_BOOT("CRC MISMATCH slot %c : calc=%08lX expected=%08lX",
+             meta.active_slot == SLOT_A ? 'A' : 'B',
+             (unsigned long)computed, (unsigned long)slot_crc);
+    while (1) {
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(100);     /* blink rapide = erreur */
+    }
+}
+LOG_BOOT("CRC OK slot %c (%08lX)",
+         meta.active_slot == SLOT_A ? 'A' : 'B', (unsigned long)computed);
+
+/* Le for-loop 2s d'attente + jump_to_app (étape 9) reste, mais avec slot_addr dynamique */
+for (int i = 0; i < 4; i++) {
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    HAL_Delay(500);
+}
+HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+jump_to_app(slot_addr);
 
   /* USER CODE END 2 */
 
