@@ -57,13 +57,40 @@ bool ota_receive_packet(ota_packet_t *out) {
             crc_buf[3 + i] = out->data[i];
     }
 
-    uint16_t crc_calc = crc16_calc(crc_buf, 3 + out->len);
+    uint16_t crc_calc = crc16_ccitt(crc_buf, 3 + out->len);
 
     return (crc_calc == crc_recu);
     
 }
 
-void ota_run_session(void) {
-    LOG_BOOT("OTA mode running ... ");
-    while(1){}
+void ota_run_session(void)
+{
+    LOG_BOOT("entering OTA session loop");
+
+    ota_packet_t pkt;
+    while (1) {
+        if (!ota_receive_packet(&pkt)) {
+            LOG_BOOT("packet rx failed (timeout or CRC)");
+            ota_send_nak();
+            return;
+        }
+
+        if (pkt.len < 1) {
+            ota_send_nak();
+            continue;
+        }
+
+        uint8_t cmd = pkt.data[0];
+        switch (cmd) {
+            case CMD_PING:
+                ota_send_ack();
+                LOG_BOOT("PING seq=%u → ACK", pkt.seq);
+                break;
+
+            default:
+                LOG_BOOT("unknown cmd 0x%02X → NAK", cmd);
+                ota_send_nak();
+                break;
+        }
+    }
 }
