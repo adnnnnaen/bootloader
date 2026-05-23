@@ -23,6 +23,7 @@
 #include "crc.h"
 #include "flash_io.h"
 #include "metadata.h"
+#include "ota_proto.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -152,6 +153,17 @@ if (computed != slot_crc) {
 }
 LOG_BOOT("CRC OK slot %c (%08lX)",
          meta.active_slot == SLOT_A ? 'A' : 'B', (unsigned long)computed);
+
+LOG_BOOT("waiting 2s for OTA trigger ('U' on UART)...");
+
+if (ota_check_enter_mode(2000)) {
+    ota_run_session();
+    
+    
+    LOG_BOOT("OTA session ended unexpectedly, resetting");
+    HAL_Delay(100);
+    NVIC_SystemReset();
+}
 
 /* Le for-loop 2s d'attente + jump_to_app (étape 9) reste, mais avec slot_addr dynamique */
 for (int i = 0; i < 4; i++) {
