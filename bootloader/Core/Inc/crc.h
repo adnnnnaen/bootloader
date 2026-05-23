@@ -9,4 +9,6 @@ uint32_t crc32_calc(const uint8_t *data, uint32_t len);
 
 uint32_t crc32_of_flash(uint32_t addr, uint32_t size);
 
+uint16_t crc16_ccitt(const uint8_t *data, uint32_t len);
+
 #endif
