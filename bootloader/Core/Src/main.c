@@ -28,6 +28,7 @@ int main(void)
 
     LOG_BOOT("=== Bootloader v1 ===");
 
+
 #ifdef BOOTSTRAP_METADATA
     {
         LOG_BOOT(">>> BOOTSTRAP_METADATA mode <<<");
@@ -105,17 +106,16 @@ int main(void)
     LOG_BOOT("CRC OK slot %c (%08lX)",
              meta.active_slot == SLOT_A ? 'A' : 'B', (unsigned long)computed);
 
-    /* 5. Petit clignotement avant le saut */
+
     for (int i = 0; i < 4; i++) {
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
         HAL_Delay(500);
     }
     HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-    /* 6. Saut vers l'application */
+
     jump_to_app(slot_addr);
 
-    /* Jamais atteint */
     while (1) { }
 }
 
